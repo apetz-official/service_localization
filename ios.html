@@ -1,0 +1,115 @@
+
+<!DOCTYPE html>
+<html lang='ko'>
+<head>
+  <style type="text/css">
+    .result {
+      width: 45%;
+      display: inline-block;
+      margin: 0 auto;
+      border: 1px solid #000;
+      vertical-align: top;
+      margin-bottom: 30px;
+    }
+    .title {
+      font-size: 20px;
+      font-weight: bold;
+      margin-bottom: 20px;
+    }
+    .updated {
+      margin-top: 30px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+    textarea {
+      width: 99%;
+      height: 300px;
+
+    }
+
+    textarea.pre {
+      white-space: pre;
+    }
+  </style>
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+</head>
+<body>
+  <div id="ios">
+    <div id="updatedAppIOS" class='updated'></div>
+    <div class='result'>
+      <div class='title'>[ko] app-string</div>
+      <textarea id="resultAppStringKO"></textarea>
+    </div>
+    <div class='result'>
+      <div class='title'>[en] app-string</div>
+      <textarea id="resultAppStringEN"></textarea>
+    </div>
+    <div class='result'>
+      <div class='title'>[in] app-string</div>
+      <textarea id="resultAppStringIN"></textarea>
+    </div>
+  </div>
+  <script>
+
+    function normalizeText(result) {
+      return result ? result[1] : ''
+    }
+
+    function jsonParseAppIos(root) {
+      var feed = root.feed;
+      var entries = feed.entry || [];
+
+      var ios_KO = []
+      var ios_EN = []
+      var ios_IN = []
+
+      var valueKO = ''
+      var valueEN = ''
+      var valueIN = ''
+
+      for (var i = 0; i < entries.length; ++i) {
+        var entry = entries[i];
+        var title = entry.title.$t;
+        var content = entry.content.$t;
+        var jsonDepth = content.match(/objectdepth1: (\S+)|objectdepth2: (\S+)|objectdepth3: (\S+)|objectdepth4: (\S+)/gmi);
+
+        var key = ''
+        try {
+          if (!jsonDepth) {
+            valueKO = normalizeText(content.match(/stringko: ([^\r\t\f]+), stringen/mi));
+            valueEN = normalizeText(content.match(/stringen: ([^\r\t\f]+), stringin/mi));
+            valueIN = normalizeText(content.match(/stringin: ([^\r\t\f]+), end/mi));
+
+            ios_KO.push('"' + title + '"= "' + valueKO + '";');
+            ios_EN.push('"' + title + '"= "' + valueEN + '";');
+            ios_IN.push('"' + title + '"= "' + valueIN + '";');
+          } else {
+            for (var j = 0; j < jsonDepth.length; j++) {
+              key = /: (\S+),/.exec(jsonDepth[j])[1];
+              title = title + '_' + key
+            }
+            valueKO = normalizeText(content.match(/stringko: ([^\r\t\f]+), stringen/mi));
+            valueEN = normalizeText(content.match(/stringen: ([^\r\t\f]+), stringin/mi));
+            valueIN = normalizeText(content.match(/stringin: ([^\r\t\f]+), end/mi));
+
+            ios_KO.push('"' + title + '"= "' + valueKO + '";');
+            ios_EN.push('"' + title + '"= "' + valueEN + '";');
+            ios_IN.push('"' + title + '"= "' + valueIN + '";');
+          }
+        } catch (e) {
+          console.error(content, i, e)
+        }
+      }
+
+      document.getElementById("resultAppStringKO").value = ios_KO.join("\n");
+      document.getElementById("resultAppStringEN").value = ios_EN.join("\n");
+      document.getElementById("resultAppStringIN").value = ios_IN.join("\n");
+
+      document.getElementById("updatedAppIOS").innerText = 'app string last updated: '+ feed.updated.$t;
+    }
+
+
+  </script>
+  <script type="text/javascript" src="https://spreadsheets.google.com/feeds/list/1zk-pUOUxaH8-le0ezJA4T4a-bocxJQYHdvjWA3xDDLs/2/public/basic?alt=json&callback=jsonParseAppIos"></script>
+</body>
+</html>

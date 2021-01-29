@@ -1,0 +1,175 @@
+
+<!DOCTYPE html>
+<html lang='ko'>
+<head>
+  <style type="text/css">
+    .result {
+      width: 45%;
+      display: inline-block;
+      margin: 0 auto;
+      border: 1px solid #000;
+      vertical-align: top;
+      margin-bottom: 30px;
+    }
+    .title {
+      font-size: 20px;
+      font-weight: bold;
+      margin-bottom: 20px;
+    }
+    .updated {
+      margin-top: 30px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+    textarea {
+      width: 99%;
+      height: 300px;
+
+    }
+
+    textarea.pre {
+      white-space: pre;
+    }
+  </style>
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+</head>
+<body>
+  <div id="android">
+    <div id="updatedAppAndroid" class='updated'></div>
+    <div class='result'>
+      <div class='title'>[ko] app-xml</div>
+      <textarea class="pre" id="resultAppXmlKO"></textarea>
+    </div>
+    <div class='result'>
+      <div class='title'>[en] app-xml</div>
+      <textarea class="pre" id="resultAppXmlEN"></textarea>
+    </div>
+    <div class='result'>
+      <div class='title'>[in] app-xml</div>
+      <textarea class="pre" id="resultAppXmlIN"></textarea>
+    </div>
+  </div>
+  <script>
+
+    function normalizeText(result) {
+      return result ? result[1] : ''
+    }
+
+    function jsonParseAppAndroid(root) {
+      var feed = root.feed;
+      var entries = feed.entry || [];
+
+      var android_KO = [];
+      var android_EN = [];
+      var android_IN = [];
+
+      var valueKO = ''
+      var valueEN = ''
+      var valueIN = ''
+
+      android_KO.push("<resources>");
+      android_EN.push("<resources>");
+      android_IN.push("<resources>");
+      for (var i = 0; i < entries.length; ++i) {
+        var entry = entries[i];
+        var title = entry.title.$t;
+        var content = entry.content.$t;
+        var jsonDepth = content.match(/objectdepth1: (\S+)|objectdepth2: (\S+)|objectdepth3: (\S+)|objectdepth4: (\S+)/gmi);
+
+        var key = ''
+        try {
+          if (!jsonDepth) {
+            valueKO = normalizeText(content.match(/stringko: ([^\r\t\f]+), stringen/mi));
+            valueEN = normalizeText(content.match(/stringen: ([^\r\t\f]+), stringin/mi));
+            valueIN = normalizeText(content.match(/stringin: ([^\r\t\f]+), end/mi));
+
+            android_KO.push("<string name=\"" + title + "\">" + valueKO + "</string>");
+            android_EN.push("<string name=\"" + title + "\">" + valueEN + "</string>");
+            android_IN.push("<string name=\"" + title + "\">" + valueIN + "</string>");
+          } else {
+            for (var j = 0; j < jsonDepth.length; j++) {
+              key = /: (\S+),/.exec(jsonDepth[j])[1];
+              title = title + '_' + key
+            }
+            valueKO = normalizeText(content.match(/stringko: ([^\r\t\f]+), stringen/mi));
+            valueEN = normalizeText(content.match(/stringen: ([^\r\t\f]+), stringin/mi));
+            valueIN = normalizeText(content.match(/stringin: ([^\r\t\f]+), end/mi));
+
+            android_KO.push("<string name=\"" + title + "\">" + valueKO + "</string>");
+            android_EN.push("<string name=\"" + title + "\">" + valueEN + "</string>");
+            android_IN.push("<string name=\"" + title + "\">" + valueIN + "</string>");
+          }
+        } catch (e) {
+          console.error(content, i, e)
+        }
+      }
+
+      android_KO.push("</resources>");
+      android_EN.push("</resources>");
+      android_IN.push("</resources>");
+
+      document.getElementById("resultAppXmlKO").value = android_KO.join("\n");
+      document.getElementById("resultAppXmlEN").value = android_EN.join("\n");
+      document.getElementById("resultAppXmlIN").value = android_IN.join("\n");
+
+      document.getElementById("updatedAppAndroid").innerText = 'app string last updated: '+ feed.updated.$t;
+    }
+    function jsonParseAppIos(root) {
+      var feed = root.feed;
+      var entries = feed.entry || [];
+
+      var ios_KO = []
+      var ios_EN = []
+      var ios_IN = []
+
+      var valueKO = ''
+      var valueEN = ''
+      var valueIN = ''
+
+      for (var i = 0; i < entries.length; ++i) {
+        var entry = entries[i];
+        var title = entry.title.$t;
+        var content = entry.content.$t;
+        var jsonDepth = content.match(/objectdepth1: (\S+)|objectdepth2: (\S+)|objectdepth3: (\S+)|objectdepth4: (\S+)/gmi);
+
+        var key = ''
+        try {
+          if (!jsonDepth) {
+            valueKO = normalizeText(content.match(/stringko: ([^\r\t\f]+), stringen/mi));
+            valueEN = normalizeText(content.match(/stringen: ([^\r\t\f]+), stringin/mi));
+            valueIN = normalizeText(content.match(/stringin: ([^\r\t\f]+), end/mi));
+
+            ios_KO.push('"' + title + '"= "' + valueKO + '";');
+            ios_EN.push('"' + title + '"= "' + valueEN + '";');
+            ios_IN.push('"' + title + '"= "' + valueIN + '";');
+          } else {
+            for (var j = 0; j < jsonDepth.length; j++) {
+              key = /: (\S+),/.exec(jsonDepth[j])[1];
+              title = title + '_' + key
+            }
+            valueKO = normalizeText(content.match(/stringko: ([^\r\t\f]+), stringen/mi));
+            valueEN = normalizeText(content.match(/stringen: ([^\r\t\f]+), stringin/mi));
+            valueIN = normalizeText(content.match(/stringin: ([^\r\t\f]+), end/mi));
+
+            ios_KO.push('"' + title + '"= "' + valueKO + '";');
+            ios_EN.push('"' + title + '"= "' + valueEN + '";');
+            ios_IN.push('"' + title + '"= "' + valueIN + '";');
+          }
+        } catch (e) {
+          console.error(content, i, e)
+        }
+      }
+
+      document.getElementById("resultAppStringKO").value = ios_KO.join("\n");
+      document.getElementById("resultAppStringEN").value = ios_EN.join("\n");
+      document.getElementById("resultAppStringIN").value = ios_IN.join("\n");
+
+      document.getElementById("updatedAppIOS").innerText = 'app string last updated: '+ feed.updated.$t;
+    }
+
+
+  </script>
+  <script type="text/javascript" src="https://spreadsheets.google.com/feeds/list/1zk-pUOUxaH8-le0ezJA4T4a-bocxJQYHdvjWA3xDDLs/1/public/basic?alt=json&callback=jsonParseAppAndroid"></script>
+
+</body>
+</html>
